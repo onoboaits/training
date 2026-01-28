@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plataforma de Capacitación MyPyMEs - Aprende a usar el sistema de gestión empresarial para Ecuador">
+    <title>MyPyMEs Training - Tu negocio digital</title>
+    <link rel="icon" type="image/png" href="logo_mypymes.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        
+        
+        // ========================================
+        // CONFIGURACIÓN DE LA API
+        // ========================================
+        const API_BASE = window.location.origin + '/mypymes/api/';
+
+        // Función helper para recargar datos del usuario
+        const reloadUserData = async (setUser) => {
+            try {
+                const response = await fetch(`${API_BASE}auth.php?action=verify`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.authenticated && data.user) {
+                    setUser(data.user);
+                }
+            } catch (error) {
+                console.error('Error recargando datos:', error);
+            }
+        };
+
+        // Componente de Icono usando Lucide
+        const Icon = ({ name, className = "w-6 h-6", ...props }) => {
+        const { useEffect } = React;
+            useEffect(() => {
+                if (window.lucide) lucide.createIcons();
+            });
+            return React.createElement('i', { 'data-lucide': name, className, ...props });
+        };
+
+        // DATOS: Módulos del sistema
+        const modules = [
+            { id: 'inicio', name: 'Primeros Pasos', topics: [
+                { id: 'instalacion', name: 'Instalación de MyPyMEs', hasVideo: true },
+                { id: 'configuracion-negocio', name: 'Configurar Datos del Negocio', hasVideo: true },
+                { id: 'configuracion-sri', name: 'Configuración SRI y Facturación Electrónica', hasVideo: true },
+                { id: 'actualizacion', name: 'Actualización del Sistema', hasVideo: false }
+            ]},
+            { id: 'gestion-negocio', name: 'Gestión del Negocio', topics: [
+                { id: 'registrar-negocio', name: 'Registrar tu Negocio en MyPyMEs', hasVideo: true },
+                { id: 'multiples-ubicaciones', name: 'Múltiples Ubicaciones o Sucursales', hasVideo: true },
+                { id: 'configuracion-impuestos', name: 'Configuración de Impuestos (IVA)', hasVideo: true }
+            ]},
+            { id: 'usuarios', name: 'Gestión de Usuarios', topics: [
+                { id: 'agregar-usuarios', name: 'Agregar Usuarios y Asignar Ubicaciones', hasVideo: true },
+                { id: 'roles', name: 'Gestión de Roles y Permisos', hasVideo: true },
+                { id: 'comisiones', name: 'Agentes de Comisión', hasVideo: false }
+            ]},
+            { id: 'contactos', name: 'Gestión de Contactos', topics: [
+                { id: 'clientes-proveedores', name: 'Gestión de Clientes y Proveedores', hasVideo: true },
+                { id: 'saldos-iniciales', name: 'Saldos Iniciales y Pagos', hasVideo: true },
+                { id: 'grupos-clientes', name: 'Grupos de Clientes', hasVideo: false },
+                { id: 'tarjetas-lealtad', name: 'Tarjetas de Lealtad', hasVideo: true }
+            ]},
+            { id: 'productos', name: 'Gestión de Productos', topics: [
+                { id: 'crear-productos', name: 'Crear y Administrar Productos', hasVideo: true },
+                { id: 'importar-productos', name: 'Importar/Exportar Productos', hasVideo: true },
+                { id: 'categorias', name: 'Categorías de Productos', hasVideo: false },
+                { id: 'variaciones', name: 'Variaciones de Productos', hasVideo: true },
+                { id: 'unidades', name: 'Unidades de Medida', hasVideo: false },
+                { id: 'codigo-barras', name: 'Impresión de Código de Barras', hasVideo: true },
+                { id: 'precios-grupos', name: 'Grupos de Precios (Mayorista/Minorista)', hasVideo: true },
+                { id: 'stock-inicial', name: 'Stock Inicial', hasVideo: true },
+                { id: 'alertas-stock', name: 'Alertas de Stock', hasVideo: false }
+            ]},
+            { id: 'compras', name: 'Gestión de Compras', topics: [
+                { id: 'realizar-compras', name: 'Realizar Compras a Proveedores', hasVideo: true },
+                { id: 'pagos-compras', name: 'Pagos de Compras', hasVideo: true },
+                { id: 'orden-compra', name: 'Órdenes de Compra', hasVideo: true },
+                { id: 'factura-compra', name: 'Facturas de Compra', hasVideo: false }
+            ]},
+            { id: 'ventas', name: 'Ventas y Punto de Venta', topics: [
+                { id: 'pos', name: 'Pantalla de Punto de Venta (POS)', hasVideo: true },
+                { id: 'ventas-credito', name: 'Ventas a Crédito', hasVideo: true },
+                { id: 'cotizaciones', name: 'Cotizaciones', hasVideo: true },
+                { id: 'facturas', name: 'Emisión de Facturas Electrónicas', hasVideo: true },
+                { id: 'notas-credito', name: 'Notas de Crédito y Devoluciones', hasVideo: true },
+                { id: 'descuentos', name: 'Descuentos por Categoría, Marca, Ubicación', hasVideo: false },
+                { id: 'puntos-recompensa', name: 'Puntos de Recompensa', hasVideo: true },
+                { id: 'caja-registradora', name: 'Caja Registradora', hasVideo: true },
+                { id: 'atajos-teclado', name: 'Atajos de Teclado para POS', hasVideo: false }
+            ]},
+            { id: 'facturacion-electronica', name: 'Facturación Electrónica Ecuador', topics: [
+                { id: 'configuracion-sri', name: 'Configuración SRI', hasVideo: true },
+                { id: 'certificado-digital', name: 'Certificado Digital', hasVideo: true },
+                { id: 'emision-facturas', name: 'Emisión de Facturas Electrónicas', hasVideo: true },
+                { id: 'notas-credito-electronicas', name: 'Notas de Crédito Electrónicas', hasVideo: true },
+                { id: 'retenciones', name: 'Retenciones', hasVideo: true },
+                { id: 'guias-remision', name: 'Guías de Remisión', hasVideo: false }
+            ]},
+            { id: 'inventario', name: 'Control de Inventario', topics: [
+                { id: 'ajustes-stock', name: 'Ajustes de Stock', hasVideo: true },
+                { id: 'transferencias', name: 'Transferencias entre Ubicaciones', hasVideo: true },
+                { id: 'historial-stock', name: 'Historial de Stock', hasVideo: false },
+                { id: 'productos-vencimiento', name: 'Productos con Fecha de Vencimiento', hasVideo: true },
+                { id: 'numero-lote', name: 'Números de Lote', hasVideo: false }
+            ]},
+            { id: 'reportes', name: 'Reportes e Informes', topics: [
+                { id: 'reporte-ventas', name: 'Reporte de Ventas', hasVideo: true },
+                { id: 'reporte-compras', name: 'Reporte de Compras', hasVideo: true },
+                { id: 'reporte-productos', name: 'Reporte de Productos', hasVideo: false },
+                { id: 'reporte-inventario', name: 'Reporte de Inventario', hasVideo: true },
+                { id: 'reporte-clientes', name: 'Reporte de Clientes', hasVideo: false },
+                { id: 'reporte-impuestos', name: 'Reporte de Impuestos', hasVideo: true },
+                { id: 'dashboard', name: 'Panel de Control (Dashboard)', hasVideo: true }
+            ]},
+            { id: 'gastos', name: 'Gestión de Gastos', topics: [
+                { id: 'registrar-gastos', name: 'Registrar Gastos', hasVideo: true },
+                { id: 'categorias-gastos', name: 'Categorías de Gastos', hasVideo: false },
+                { id: 'reembolsos', name: 'Reembolsos de Gastos', hasVideo: true }
+            ]},
+            { id: 'notificaciones', name: 'Notificaciones', topics: [
+                { id: 'config-email', name: 'Configuración de Email/SMTP', hasVideo: true },
+                { id: 'config-sms', name: 'Configuración de SMS', hasVideo: true },
+                { id: 'notif-automaticas', name: 'Notificaciones Automáticas', hasVideo: false }
+            ]},
+            { id: 'configuracion', name: 'Configuración del Sistema', topics: [
+                { id: 'config-negocio', name: 'Configuración del Negocio', hasVideo: true },
+                { id: 'esquema-facturas', name: 'Esquema de Numeración de Facturas', hasVideo: true },
+                { id: 'idioma', name: 'Configuración de Idioma', hasVideo: false },
+                { id: 'metodos-pago', name: 'Métodos de Pago Personalizados', hasVideo: true },
+                { id: 'tema-color', name: 'Cambiar Tema y Color de la Aplicación', hasVideo: false }
+            ]},
+            { id: 'hardware', name: 'Soporte de Hardware', topics: [
+                { id: 'impresora-termica', name: 'Configurar Impresora Térmica', hasVideo: true },
+                { id: 'lector-barras', name: 'Lector de Código de Barras', hasVideo: true },
+                { id: 'cajon-dinero', name: 'Cajón de Dinero Automático', hasVideo: true },
+                { id: 'impresora-barras', name: 'Impresora de Código de Barras', hasVideo: false }
+            ]}
+        ];
+
+        // DATOS: Preguntas del examen
+        const examQuestions = [
+            { id: 1, question: '¿Cuál es el primer paso para configurar la facturación electrónica en MyPyMEs?',
+              options: ['Registrar productos en el inventario', 'Configurar el certificado digital del SRI', 'Crear clientes en el sistema', 'Emitir una factura de prueba'], correct: 1 },
+            { id: 2, question: '¿Qué módulo permite controlar el stock de productos en MyPyMés?',
+              options: ['Módulo de Ventas', 'Módulo de Facturación', 'Control de Inventario', 'Módulo de Reportes'], correct: 2 },
+            { id: 3, question: '¿Desde dónde se emiten las facturas electrónicas en MyPyMés?',
+              options: ['Desde el Módulo de Inventario', 'Desde el Punto de Venta (POS)', 'Desde Configuración del Sistema', 'Desde el Módulo de Reportes'], correct: 1 },
+            { id: 4, question: '¿Para qué sirven los grupos de precios en MyPyMés?',
+              options: ['Para organizar productos por categoría', 'Para establecer precios diferentes (mayorista/minorista)', 'Para calcular impuestos', 'Para generar reportes'], correct: 1 },
+            { id: 5, question: '¿Qué documento electrónico se emite cuando se devuelve una venta?',
+              options: ['Factura electrónica', 'Guía de remisión', 'Nota de crédito electrónica', 'Comprobante de retención'], correct: 2 },
+            { id: 6, question: '¿Qué función tiene el módulo de caja registradora en MyPyMés?',
+              options: ['Registrar productos', 'Controlar el efectivo de apertura y cierre', 'Emitir facturas', 'Crear clientes'], correct: 1 },
+            { id: 7, question: '¿Cómo se realiza una transferencia de stock entre sucursales?',
+              options: ['Creando una venta entre ubicaciones', 'Usando el módulo de ajustes de stock', 'Usando el módulo de transferencias entre ubicaciones', 'No es posible transferir stock'], correct: 2 },
+            { id: 8, question: '¿Qué reportes están disponibles en MyPyMés?',
+              options: ['Solo reporte de ventas', 'Ventas, compras, inventario, impuestos y más', 'Solo reporte de productos', 'No hay reportes disponibles'], correct: 1 },
+            { id: 9, question: '¿Para qué sirven las alertas de stock en MyPyMés?',
+              options: ['Para notificar cuando un producto está por agotarse', 'Para aumentar precios automáticamente', 'Para generar órdenes de compra', 'Para crear promociones'], correct: 0 },
+            { id: 10, question: '¿Qué hardware se puede integrar con MyPyMés?',
+              options: ['Solo impresoras normales', 'Impresoras térmicas, lectores de código de barras, cajón de dinero', 'Solo teclado y mouse', 'No soporta hardware adicional'], correct: 1 }
+        ];
+
+        // COMPONENTE PRINCIPAL
+        function TutorialPlatform() {
+            const { useState, useEffect } = React;
+            
+            // Estados
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [registerMode, setRegisterMode] = useState(false);
+            const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', businessType: '', country: '', province: '', city: '' });
+            const [selectedModule, setSelectedModule] = useState(null);
+            const [selectedTopic, setSelectedTopic] = useState(null);
+            const [showExam, setShowExam] = useState(false);
+            const [examAnswers, setExamAnswers] = useState({});
+            const [showCertificate, setShowCertificate] = useState(null);
+            const [menuOpen, setMenuOpen] = useState(false);
+            const [showForgotPassword, setShowForgotPassword] = useState(false);
+            const [resetEmail, setResetEmail] = useState('');
+
+
+            // Verificar sesión al cargar la página
+            useEffect(() => {
+                const verifySession = async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}auth.php?action=verify`, { credentials: 'include' });
+                        const data = await response.json();
+                        if (data.authenticated && data.user) {
+                            setUser(data.user);
+                        }
+                    } catch (error) {
+                        console.error('Error verificando sesión:', error);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                verifySession();
+            }, []);
+
+            useEffect(() => {
+                if (window.lucide) lucide.createIcons();
+            });
+
+            const handleRegister = async () => {
+                if (!formData.name || !formData.email || !formData.password || !formData.phone || !formData.businessType || !formData.country || !formData.province || !formData.city) {
+                    alert('Por favor completa todos los campos');
+                    return;
+                }
+                try {
+                    const response = await fetch(`${API_BASE}auth.php?action=register`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify(formData)
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        await reloadUserData(setUser);
+                        setFormData({ name: '', email: '', password: '', phone: '', businessType: '', country: '', province: '', city: '' });
+                        alert('¡Registro exitoso! Bienvenido a MyPyMés Training');
+                    } else {
+                        alert(data.message || 'Error al registrar usuario');
+                    }
+                } catch (error) {
+                    console.error('Error en registro:', error);
+                    alert('Error al conectar con el servidor');
+                }
+            };
+
+            const handleLogin = async () => {
+                if (!formData.email || !formData.password) {
+                    alert('Por favor ingresa email y contraseña');
+                    return;
+                }
+                try {
+                    const response = await fetch(`${API_BASE}auth.php?action=login`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ email: formData.email, password: formData.password })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.user) {
+                        setUser(data.user);
+                        setFormData({ name: '', email: '', password: '', phone: '', businessType: '', country: '', province: '', city: '' });
+                    } else {
+                        alert(data.message || 'Credenciales inválidas');
+                    }
+                } catch (error) {
+                    console.error('Error en login:', error);
+                    alert('Error al conectar con el servidor');
+                }
+            };
+
+            const handleForgotPassword = async () => {
+                if (!resetEmail) {
+                    alert('Por favor ingresa tu email');
+                    return;
+                }
+            
+                try {
+                    const response = await fetch(`${API_BASE}auth.php?action=forgot-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ email: resetEmail })
+                    });
+            
+                    const data = await response.json();
+            
+                    if (data.success) {
+                        alert('✅ Se ha enviado un email con instrucciones para recuperar tu contraseña');
+                        setShowForgotPassword(false);
+                        setResetEmail('');
+                    } else {
+                        alert(data.message || 'Error al enviar el email');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al conectar con el servidor');
+                }
+            };
+
+
+            const handleLogout = async () => {
+                try {
+                    await fetch(`${API_BASE}auth.php?action=logout`, { credentials: 'include' });
+                    setUser(null);
+                    setSelectedModule(null);
+                    setSelectedTopic(null);
+                } catch (error) {
+                    console.error('Error en logout:', error);
+                }
+            };
+
+            const markAsRead = async (moduleId, topicId) => {
+                try {
+                    const response = await fetch(`${API_BASE}progress.php?action=mark-read`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ moduleId, topicId })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        await reloadUserData(setUser);
+                    } else {
+                        alert('Error al marcar como leído');
+                    }
+                } catch (error) {
+                    console.error('Error marcando como leído:', error);
+                    alert('Error al conectar con el servidor');
+                }
+            };
+
+            const rateContent = async (moduleId, topicId, rating) => {
+                try {
+                    await fetch(`${API_BASE}progress.php?action=rate-content`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ moduleId, topicId, rating })
+                    });
+                    await reloadUserData(setUser);
+                } catch (error) {
+                    console.error('Error calificando contenido:', error);
+                }
+            };
+
+            const submitExam = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}exam.php?action=submit`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ answers: examAnswers })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        if (data.passed) {
+                            alert(`🎉 ¡Felicitaciones! Has aprobado con ${data.score.toFixed(0)}%\n\nSe ha enviado un email a ${user.email} con tu certificado.`);
+                            await reloadUserData(setUser);
+                            setShowCertificate('certified');
+                        } else {
+                            alert(`Necesitas 70% o más para aprobar.\nObtuviste ${data.score.toFixed(0)}% (${data.correct}/${data.total} correctas)`);
+                        }
+                    } else {
+                        alert('Error al procesar el examen');
+                    }
+                } catch (error) {
+                    console.error('Error enviando examen:', error);
+                    alert('Error al conectar con el servidor');
+                } finally {
+                    setShowExam(false);
+                    setExamAnswers({});
+                }
+            };
+
+            const sendCertificateEmail = async (certificateType) => {
+                try {
+                    const response = await fetch(`${API_BASE}exam.php?action=send-certificate-email`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                        body: JSON.stringify({ certificateType })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert(`✅ Email enviado exitosamente a ${user.email}\n\nRevisa tu bandeja de entrada y spam.`);
+                    } else {
+                        alert('❌ Error al enviar el email');
+                    }
+                } catch (error) {
+                    console.error('Error enviando email:', error);
+                    alert('❌ Error al conectar con el servidor');
+                }
+            };
+
+            const generatePDF = (certType) => {
+                const cert = user.certificates.find(c => c.type === certType);
+                const canvas = document.createElement('canvas');
+                canvas.width = 1200;
+                canvas.height = 800;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFF9E6';
+                ctx.fillRect(0, 0, 1200, 800);
+                ctx.strokeStyle = '#D4AF37';
+                ctx.lineWidth = 20;
+                ctx.strokeRect(40, 40, 1120, 720);
+                ctx.fillStyle = '#1E40AF';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('CERTIFICADO DE ' + (certType === 'knowledge' ? 'CONOCIMIENTO' : 'USUARIO CALIFICADO'), 600, 150);
+                ctx.fillStyle = '#1E40AF';
+                ctx.beginPath();
+                ctx.arc(600, 250, 50, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#333';
+                ctx.font = '24px Arial';
+                ctx.fillText('Se certifica que', 600, 350);
+                ctx.fillStyle = '#1E40AF';
+                ctx.font = 'bold 42px Arial';
+                ctx.fillText(user.name, 600, 410);
+                ctx.fillStyle = '#333';
+                ctx.font = '20px Arial';
+                ctx.fillText('ha completado exitosamente el ' + (certType === 'knowledge' ? 'módulo de capacitación' : 'programa completo'), 600, 470);
+                ctx.fillText('de certificación de MyPyMés', 600, 500);
+                if (cert?.score) {
+                    ctx.fillText(`con una calificación de ${cert.score.toFixed(0)}%`, 600, 540);
+                }
+                ctx.font = '18px Arial';
+                ctx.fillText(`Fecha: ${cert?.date || new Date().toLocaleDateString('es-EC')}`, 600, 600);
+                ctx.fillStyle = '#1E40AF';
+                ctx.font = 'bold 28px Arial';
+                ctx.fillText('MyPyMés, tu negocio digital!!', 600, 680);
+                const link = document.createElement('a');
+                link.download = `certificado_mypymes_${certType}_${user.name.replace(/\s/g, '_')}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            };
+
+            const getTotalProgress = () => {
+                if (!user || !user.progress) return 0;
+                const totalTopics = modules.reduce((sum, m) => sum + m.topics.length, 0);
+                const readTopics = Object.keys(user.progress).filter(k => user.progress[k]).length;
+                return Math.round((readTopics / totalTopics) * 100);
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 to-blue-200">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-gray-700">Cargando...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ========================================
+            // PARTE 2/3 - COMPONENTES UI
+            // Pega este código donde dice "return <div>Aplicación cargada</div>;"
+            // ========================================
+            
+            // Modal de recuperación de contraseña
+            if (showForgotPassword) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-sky-100 to-blue-200 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                            <div className="text-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800">Recuperar Contraseña</h2>
+                                <p className="text-gray-600 mt-2">Ingresa tu email y te enviaremos instrucciones</p>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <input
+                                    type="email"
+                                    placeholder="Correo electrónico"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={resetEmail}
+                                    onChange={(e) => setResetEmail(e.target.value)}
+                                />
+                                
+                                <button
+                                    onClick={handleForgotPassword}
+                                    className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+                                >
+                                    Enviar Instrucciones
+                                </button>
+                                
+                                <button
+                                    onClick={() => {
+                                        setShowForgotPassword(false);
+                                        setResetEmail('');
+                                    }}
+                                    className="w-full text-gray-600 hover:underline"
+                                >
+                                    Volver al login
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // PANTALLA DE LOGIN/REGISTRO
+            if (!user) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-sky-100 to-blue-200 flex items-center justify-center p-4 relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-10 left-10 text-6xl">🛒</div>
+                            <div className="absolute top-32 right-20 text-5xl">📊</div>
+                            <div className="absolute bottom-20 left-32 text-6xl">💳</div>
+                            <div className="absolute top-1/2 right-10 text-5xl">📱</div>
+                            <div className="absolute bottom-32 right-1/3 text-6xl">🏪</div>
+                            <div className="absolute top-20 left-1/3 text-5xl">📦</div>
+                            <div className="absolute bottom-10 left-20 text-5xl">🔢</div>
+                            <div className="absolute top-1/3 right-1/4 text-6xl">💰</div>
+                            <div className="absolute bottom-1/3 left-1/4 text-5xl">🎯</div>
+                            <div className="absolute top-2/3 right-40 text-5xl">📈</div>
+                        </div>
+            
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative z-10">
+                            <div className="text-center mb-6">
+                                <div className="w-32 h-32 mx-auto mb-4">
+                                    <img 
+                                        src="logo_mypymes.png" 
+                                        alt="MyPyMEs Logo" 
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            console.error('Error cargando logo');
+                                        }}
+                                    />
+                                </div>
+                                <h1 className="text-3xl font-bold text-gray-800">MyPyMEs</h1>
+                                <p className="text-gray-600">tu negocio digital!!</p>
+                                <p className="text-gray-600">Plataforma de Capacitación</p>
+                            </div>
+            
+                            <div className="space-y-3">
+                                {registerMode && (
+                                    <>
+                                        <input type="text" placeholder="Nombre completo *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                        <input type="email" placeholder="Correo electrónico *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                                        <input type="tel" placeholder="Celular *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.phone || ''} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                                        <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.businessType || ''} onChange={(e) => setFormData({...formData, businessType: e.target.value})}>
+                                            <option value="">Tipo de negocio *</option>
+                                            <option value="retail">Retail/Tienda</option>
+                                            <option value="restaurant">Restaurante/Cafetería</option>
+                                            <option value="services">Servicios</option>
+                                            <option value="wholesale">Mayorista</option>
+                                            <option value="other">Otro</option>
+                                        </select>
+                                        <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.country || ''} onChange={(e) => setFormData({...formData, country: e.target.value})}>
+                                            <option value="">País *</option>
+                                            <option value="EC">Ecuador</option>
+                                            <option value="CO">Colombia</option>
+                                            <option value="PE">Perú</option>
+                                            <option value="MX">México</option>
+                                            <option value="other">Otro</option>
+                                        </select>
+                                        <input type="text" placeholder="Provincia *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.province || ''} onChange={(e) => setFormData({...formData, province: e.target.value})} />
+                                        <input type="text" placeholder="Ciudad *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.city || ''} onChange={(e) => setFormData({...formData, city: e.target.value})} />
+                                        <input type="password" placeholder="Contraseña *" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                                    </>
+                                )}
+                                
+                                {!registerMode && (
+                                    <>
+                                        <input type="email" placeholder="Correo electrónico" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                                        <input type="password" placeholder="Contraseña" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                                        <div className="text-right">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setShowForgotPassword(true)} 
+                                                className="text-sm text-blue-600 hover:underline"
+                                            >
+                                                ¿Olvidaste tu contraseña?
+                                            </button>
+                                        </div>
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                            <p className="text-xs text-blue-800 font-semibold mb-1">Ingrese su Usuario y Contraseña</p>
+                                            <p className="text-xs text-blue-700">Si no posee Usuario Registrese</p>
+                                            <p className="text-xs text-blue-700">Si no recuerda su Contraseña, solicite el cambio.</p>
+                                            <p className="text-xs text-blue-700">Tambien puede registrarse con sus redes sociales.</p>
+                                        </div>                                        
+                                        
+                                    </>
+                                )}
+                                
+                                <button onClick={registerMode ? handleRegister : handleLogin} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                                    {registerMode ? 'Crear Cuenta' : 'Iniciar Sesión'}
+                                </button>
+            
+                                {!registerMode && (
+                                    <>
+                                        
+                                    </>
+                                )}
+            
+                                <button onClick={() => { setRegisterMode(!registerMode); setFormData({ name: '', email: '', password: '', phone: '', businessType: '', country: '', province: '', city: '' }); }} className="w-full text-blue-600 hover:underline text-sm">
+                                    {registerMode ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                                </button>
+                            </div>
+            
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <p className="text-center text-sm text-gray-600 mb-3">Síguenos en:</p>
+                                <div className="flex justify-center gap-4">
+                                    <a href="https://facebook.com/mypymes" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 transition">
+                                        <Icon name="facebook" className="w-6 h-6" />
+                                    </a>
+                                    <a href="https://instagram.com/mypymes" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700 transition">
+                                        <Icon name="instagram" className="w-6 h-6" />
+                                    </a>
+                                    <a href="https://linkedin.com/company/mypymes" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-800 transition">
+                                        <Icon name="linkedin" className="w-6 h-6" />
+                                    </a>
+                                </div>
+                                <div className="mt-4 flex justify-center">
+                                    <a href="https://wa.me/593963321766" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition">
+                                        <Icon name="message-circle" className="w-5 h-5" />
+                                        <span className="text-sm font-semibold">Contáctanos por WhatsApp</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // PANTALLA DE CERTIFICADO
+            if (showCertificate) {
+                const cert = user.certificates.find(c => c.type === showCertificate);
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-yellow-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-2xl p-12 max-w-3xl w-full border-8 border-amber-500">
+                            <div className="text-center">
+                                <Icon name="award" className="w-24 h-24 text-amber-500 mx-auto mb-4" />
+                                <h1 className="text-4xl font-bold text-gray-800 mb-2">Certificado de {showCertificate === 'knowledge' ? 'Conocimiento' : 'Usuario Calificado'}</h1>
+                                <div className="my-8 border-t-2 border-b-2 border-amber-500 py-6">
+                                    <p className="text-xl text-gray-700 mb-4">Se certifica que</p>
+                                    <p className="text-3xl font-bold text-indigo-600 mb-4">{user.name}</p>
+                                    <p className="text-lg text-gray-700">ha completado exitosamente el {showCertificate === 'knowledge' ? 'módulo de capacitación' : 'programa completo de certificación'} de MyPyMés</p>
+                                    {cert?.score && <p className="text-lg text-gray-700 mt-2">con una calificación de {cert.score.toFixed(0)}%</p>}
+                                </div>
+                                <p className="text-gray-600">Fecha: {cert?.date}</p>
+                                <p className="text-2xl font-bold text-indigo-600 mt-6">MyPyMés, tu negocio digital!!</p>
+                            </div>
+                            <div className="flex gap-3 mt-8">
+                                <button onClick={() => generatePDF(showCertificate)} className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2">
+                                    📥 Descargar PDF
+                                </button>
+                                <button onClick={() => sendCertificateEmail(showCertificate)} className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                    📧 Enviar por Email
+                                </button>
+                            </div>
+                            <button onClick={() => setShowCertificate(null)} className="mt-4 w-full bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition">Cerrar</button>
+                        </div>
+                    </div>
+                );
+            }
+            
+            // PANTALLA DE EXAMEN
+            if (showExam) {
+                return (
+                    <div className="min-h-screen bg-gray-50 p-4">
+                        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+                            <h1 className="text-3xl font-bold text-gray-800 mb-6">Evaluación Final MyPyMés</h1>
+                            <p className="text-gray-600 mb-8">Responde correctamente al menos el 70% para obtener tu certificado de Usuario Calificado.</p>
+                            {examQuestions.map((q, idx) => (
+                                <div key={q.id} className="mb-6 p-4 border border-gray-200 rounded-lg">
+                                    <p className="font-semibold text-gray-800 mb-3">{idx + 1}. {q.question}</p>
+                                    <div className="space-y-2">
+                                        {q.options.map((opt, optIdx) => (
+                                            <label key={optIdx} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                                <input type="radio" name={`question-${q.id}`} value={optIdx} checked={examAnswers[q.id] === optIdx} onChange={() => setExamAnswers({...examAnswers, [q.id]: optIdx})} className="w-4 h-4 text-indigo-600" />
+                                                <span className="text-gray-700">{opt}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex gap-4">
+                                <button onClick={submitExam} disabled={Object.keys(examAnswers).length < examQuestions.length} className="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition disabled:bg-gray-300">Enviar Evaluación</button>
+                                <button onClick={() => setShowExam(false)} className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ========================================
+            // PARTE 3/3 - DASHBOARD PRINCIPAL Y FOOTER
+            // Pega este código después de la PARTE 2
+            // Este es el return final del componente
+            // ========================================
+            
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col">
+                    {/* Header */}
+                    <header className="bg-white shadow-md p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 hover:bg-gray-100 rounded">
+                                <Icon name={menuOpen ? "x" : "menu"} className="w-6 h-6" />
+                            </button>
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center">
+                                    <Icon name="book-open" className="w-6 h-6 text-white" />
+                                </div>
+                                <h1 className="text-2xl font-bold text-gray-800">MyPyMEs</h1>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                                <p className="text-xs text-gray-600">Progreso: {getTotalProgress()}%</p>
+                            </div>
+                            <button onClick={handleLogout} className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition">
+                                <Icon name="log-out" className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </header>
+            
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* Sidebar */}
+                        <aside className={`${menuOpen ? 'block' : 'hidden'} lg:block w-full lg:w-80 bg-white border-r border-gray-200 overflow-y-auto absolute lg:relative z-10 h-full`}>
+                            <div className="p-6">
+                                <h2 className="text-lg font-bold text-gray-800 mb-4">Módulos de Capacitación</h2>
+                                {modules.map(module => (
+                                    <div key={module.id} className="mb-4">
+                                        <button onClick={() => setSelectedModule(selectedModule === module.id ? null : module.id)} className="w-full flex items-center justify-between p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                                            <span className="font-semibold text-gray-800">{module.name}</span>
+                                            {user.completedModules && user.completedModules.includes(module.id) && <Icon name="check-circle" className="w-5 h-5 text-green-600" />}
+                                        </button>
+                                        {selectedModule === module.id && (
+                                            <div className="mt-2 ml-4 space-y-1">
+                                                {module.topics.map(topic => (
+                                                    <button key={topic.id} onClick={() => { setSelectedTopic({ moduleId: module.id, ...topic }); setMenuOpen(false); }} className="w-full flex items-center justify-between p-2 hover:bg-gray-100 rounded text-left transition">
+                                                        <span className="text-sm text-gray-700">{topic.name}</span>
+                                                        {user.progress && user.progress[`${module.id}-${topic.id}`] && <Icon name="check-circle" className="w-4 h-4 text-green-600" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                <div className="mt-8 space-y-3">
+                                    <button onClick={() => {
+                                        const allCompleted = modules.every(m => user.completedModules && user.completedModules.includes(m.id));
+                                        if (allCompleted) setShowExam(true);
+                                        else alert('Debes completar todos los módulos antes de rendir la evaluación');
+                                    }} className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition flex items-center justify-center gap-2">
+                                        <Icon name="award" className="w-5 h-5" />
+                                        Evaluación Final
+                                    </button>
+                                    {user.certificates && user.certificates.length > 0 && (
+                                        <div className="p-3 bg-green-50 rounded-lg">
+                                            <p className="text-sm font-semibold text-green-800 mb-2">Tus Certificados:</p>
+                                            {user.certificates.map((cert, idx) => (
+                                                <button key={idx} onClick={() => setShowCertificate(cert.type)} className="w-full text-left text-xs text-green-700 hover:underline mb-1">
+                                                    • {cert.type === 'knowledge' ? 'Conocimiento' : 'Usuario Calificado'} - {cert.date}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </aside>
+            
+                        {/* Main Content */}
+                        <main className="flex-1 overflow-y-auto p-6">
+                            {selectedTopic ? (
+                                <div className="max-w-4xl mx-auto">
+                                    <div className="bg-white rounded-lg shadow-lg p-8">
+                                        <h2 className="text-3xl font-bold text-gray-800 mb-6">{selectedTopic.name}</h2>
+                                        <div className="prose max-w-none mb-8">
+                                            <p className="text-gray-700 leading-relaxed mb-4">Bienvenido al tutorial de <strong>{selectedTopic.name}</strong>. Esta guía completa te ayudará a dominar esta funcionalidad paso a paso.</p>
+                                            <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">¿Qué aprenderás en este tutorial?</h3>
+                                            <p className="text-gray-700 mb-4">En esta sección aprenderás a utilizar todas las funcionalidades de <strong>{selectedTopic.name}</strong> en el sistema MyPyMés.</p>
+                                            <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Contenido del Tutorial</h3>
+                                            <p className="text-gray-700 mb-2"><strong>1. Introducción:</strong> Conoce la importancia y beneficios.</p>
+                                            <p className="text-gray-700 mb-2"><strong>2. Configuración:</strong> Aprende a configurar correctamente.</p>
+                                            <p className="text-gray-700 mb-2"><strong>3. Uso Práctico:</strong> Ejemplos paso a paso.</p>
+                                            <p className="text-gray-700 mb-2"><strong>4. Mejores Prácticas:</strong> Consejos y recomendaciones.</p>
+                                            <p className="text-gray-700 mb-4"><strong>5. Solución de Problemas:</strong> Resuelve problemas comunes.</p>
+                                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6">
+                                                <p className="text-blue-800 font-semibold mb-2">💡 Consejo Importante</p>
+                                                <p className="text-blue-700 text-sm">Te recomendamos ver el video tutorial completo y practicar en tu propio sistema MyPyMés.</p>
+                                            </div>
+                                        </div>
+                                        <div className="mb-8 bg-gray-100 rounded-lg p-6">
+                                            {selectedTopic.hasVideo ? (
+                                                <div className="text-center">
+                                                    <Icon name="video" className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                                                    <p className="text-gray-700 mb-2">Video Tutorial</p>
+                                                    <div className="mt-4 bg-gray-800 rounded-lg h-64 flex items-center justify-center">
+                                                        <p className="text-white">Reproductor de video (integrar URL real)</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center">
+                                                    <Icon name="file-text" className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                                                    <p className="text-gray-700">Imagen de referencia</p>
+                                                    <div className="mt-4 bg-gray-200 rounded-lg h-64 flex items-center justify-center">
+                                                        <p className="text-gray-600">Imagen ilustrativa del tema</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="border-t pt-6 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-gray-700 font-semibold">¿Te ha sido útil este contenido?</span>
+                                                <div className="flex gap-2">
+                                                    {[1, 2, 3, 4, 5].map(rating => (
+                                                        <button key={rating} onClick={() => rateContent(selectedTopic.moduleId, selectedTopic.id, rating)} className="transition">
+                                                            <Icon name="star" className={`w-6 h-6 ${user.ratings && user.ratings[`${selectedTopic.moduleId}-${selectedTopic.id}`] >= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <button onClick={() => markAsRead(selectedTopic.moduleId, selectedTopic.id)} disabled={user.progress && user.progress[`${selectedTopic.moduleId}-${selectedTopic.id}`]} className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition disabled:bg-green-600 flex items-center justify-center gap-2">
+                                                {user.progress && user.progress[`${selectedTopic.moduleId}-${selectedTopic.id}`] ? (
+                                                    <><Icon name="check-circle" className="w-5 h-5" /> Marcado como Leído</>
+                                                ) : (
+                                                    'Marcar como Leído'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="max-w-4xl mx-auto text-center py-20">
+                                    <Icon name="book-open" className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Bienvenido a MyPyMés Training</h2>
+                                    <p className="text-gray-600 mb-2">Selecciona un tema del menú lateral para comenzar tu capacitación</p>
+                                    <p className="text-sm text-gray-500">Completa todos los módulos para obtener tu certificado de conocimiento</p>
+                                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="bg-white p-6 rounded-lg shadow">
+                                            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Icon name="book-open" className="w-6 h-6 text-indigo-600" />
+                                            </div>
+                                            <h3 className="font-semibold text-gray-800 mb-2">Aprende</h3>
+                                            <p className="text-sm text-gray-600">Accede a tutoriales completos y videos explicativos</p>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-lg shadow">
+                                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Icon name="check-circle" className="w-6 h-6 text-green-600" />
+                                            </div>
+                                            <h3 className="font-semibold text-gray-800 mb-2">Practica</h3>
+                                            <p className="text-sm text-gray-600">Marca tu progreso y califica el contenido</p>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-lg shadow">
+                                            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Icon name="award" className="w-6 h-6 text-amber-600" />
+                                            </div>
+                                            <h3 className="font-semibold text-gray-800 mb-2">Certifícate</h3>
+                                            <p className="text-sm text-gray-600">Obtén certificados al completar los módulos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+            
+                    {/* Footer */}
+                    <footer className="bg-gray-800 text-white py-6">
+                        <div className="max-w-7xl mx-auto px-6">
+                            <div className="flex flex-col md:flex-row items-center justify-between">
+                                <p className="text-lg font-semibold mb-4 md:mb-0">MyPyMés, tu negocio digital!!</p>
+                                <div className="flex gap-4">
+                                    <a href="https://instagram.com/mypymes" target="_blank" rel="noopener noreferrer" className="hover:text-pink-400 transition">
+                                        <Icon name="instagram" className="w-6 h-6" />
+                                    </a>
+                                    <a href="https://facebook.com/mypymes" target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition">
+                                        <Icon name="facebook" className="w-6 h-6" />
+                                    </a>
+                                    <a href="https://linkedin.com/company/mypymes" target="_blank" rel="noopener noreferrer" className="hover:text-blue-300 transition">
+                                        <Icon name="linkedin" className="w-6 h-6" />
+                                    </a>
+                                    <a href="https://wa.me/593999999999" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition">
+                                        <Icon name="message-circle" className="w-6 h-6" />
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+            // FIN DEL COMPONENTE TutorialPlatform
+        }
+        
+        ReactDOM.render(<TutorialPlatform />, document.getElementById('root'));
+    </script>
+</body>
+</html>            
